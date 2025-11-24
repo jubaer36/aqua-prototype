@@ -4,19 +4,17 @@
 
 // Configuration
 const CONFIG = {
-    flowMeterUrl: 'http://192.168.0.77/api/data',  // Actual ESP32 flow meter endpoint
-    esp32CameraUrl: 'http://192.168.0.110/stream',
-    botCameraUrl: 'http://192.168.0.110/bot/stream',
+    flowMeterUrl: 'http://10.93.71.184/api/data',  // Actual ESP32 flow meter endpoint
+    botCameraUrl: 'http://10.93.71.1',
     updateInterval: 2000, // 2 seconds
-    defaultThreshold: 150, // L/min
-    mockMode: true // Set to false when connected to actual hardware
+    defaultThreshold: 20, // L/min
+    mockMode: false // Set to false when connected to actual hardware
 };
 
 // Default configuration for reset
 const DEFAULT_CONFIG = {
-    flowMeterUrl: 'http://192.168.0.77/api/data',
-    esp32CameraUrl: 'http://192.168.0.110/stream',
-    botCameraUrl: 'http://192.168.0.110/bot/stream'
+    flowMeterUrl: 'http://10.93.71.184/api/data',
+    botCameraUrl: 'http://10.93.71.1'
 };
 
 // Application State
@@ -30,10 +28,10 @@ const state = {
     flowHistory: [],
     botDeployed: false,
     warningActive: false,
+    lowFlowStartTime: null, // Track when low flow started
     // Track which devices are using real data
     devices: {
         flowMeter: { usingRealData: false, connected: false },
-        drainCamera: { usingRealData: false, connected: false },
         botCamera: { usingRealData: false, connected: false }
     }
 };
@@ -41,19 +39,17 @@ const state = {
 // DOM Elements
 const elements = {
     currentFlowRate: document.getElementById('currentFlowRate'),
-    thresholdDisplay: document.getElementById('thresholdDisplay'),
+    totalVolume: document.getElementById('totalVolume'),
+    thresholdInput: document.getElementById('thresholdInput'),
     systemStatusText: document.getElementById('systemStatusText'),
     botStatusText: document.getElementById('botStatusText'),
     flowMeterStatus: document.getElementById('flowMeterStatus'),
-    cameraStatus: document.getElementById('cameraStatus'),
     gaugeValue: document.getElementById('gaugeValue'),
     gaugeProgress: document.getElementById('gaugeProgress'),
     thresholdValue: document.getElementById('thresholdValue'),
     minFlow: document.getElementById('minFlow'),
     avgFlow: document.getElementById('avgFlow'),
     maxFlow: document.getElementById('maxFlow'),
-    drainCamera: document.getElementById('drainCamera'),
-    cameraOverlay: document.getElementById('cameraOverlay'),
     alertBanner: document.getElementById('alertBanner'),
     clogIndicator: document.getElementById('clogIndicator'),
     sectionB: document.getElementById('sectionB'),
@@ -70,7 +66,7 @@ const elements = {
 // ==========================================
 
 function init() {
-    console.log('🚀 Project Aqua Initializing...');
+    console.log('🚀 Project Porishkar Initializing...');
 
     // Add SVG gradient for gauge
     addGaugeGradient();
@@ -84,7 +80,7 @@ function init() {
     // Start data polling (will auto-detect real vs mock per device)
     startDataPolling();
 
-    console.log('✅ Project Aqua Ready');
+    console.log('✅ Project Porishkar Ready');
 }
 
 // ==========================================
@@ -92,48 +88,8 @@ function init() {
 // ==========================================
 
 function initializeCameras() {
-    // Check if drainage camera URL is provided and valid
-    if (CONFIG.esp32CameraUrl && CONFIG.esp32CameraUrl.trim() !== '') {
-        console.log('📹 Attempting to connect to drainage camera:', CONFIG.esp32CameraUrl);
-
-        // Update UI to show the address
-        const addressElement = document.getElementById('drainCameraAddress');
-        const messageElement = document.getElementById('drainCameraMessage');
-        const labelElement = document.getElementById('drainCameraLabel');
-
-        if (addressElement) addressElement.textContent = CONFIG.esp32CameraUrl;
-        if (labelElement) labelElement.textContent = `Camera: ${extractHostname(CONFIG.esp32CameraUrl)}`;
-
-        elements.drainCamera.src = CONFIG.esp32CameraUrl;
-
-        elements.drainCamera.onload = () => {
-            elements.cameraOverlay.classList.add('hidden');
-            state.devices.drainCamera.connected = true;
-            state.devices.drainCamera.usingRealData = true;
-            updateConnectionStatus(elements.cameraStatus, true);
-            console.log('✅ Drainage camera connected');
-        };
-
-        elements.drainCamera.onerror = () => {
-            state.devices.drainCamera.connected = false;
-            state.devices.drainCamera.usingRealData = false;
-            updateConnectionStatus(elements.cameraStatus, false);
-            if (messageElement) messageElement.textContent = 'Camera Offline - Connection Failed';
-            console.error(`❌ Drainage camera connection failed: ${CONFIG.esp32CameraUrl}`);
-        };
-    } else {
-        // No URL provided, use mock
-        console.log('📹 No drainage camera URL provided - using mock mode');
-        const addressElement = document.getElementById('drainCameraAddress');
-        const messageElement = document.getElementById('drainCameraMessage');
-        const labelElement = document.getElementById('drainCameraLabel');
-
-        state.devices.drainCamera.usingRealData = false;
-        if (messageElement) messageElement.textContent = 'Mock Mode - No Camera Configured';
-        if (addressElement) addressElement.textContent = 'No URL configured';
-        if (labelElement) labelElement.textContent = 'ESP32-CAM (Mock)';
-        updateConnectionStatus(elements.cameraStatus, false);
-    }
+    // Only Bot Camera logic remains
+    // Bot camera is activated when deployed
 }
 
 function activateBotCamera() {
@@ -258,6 +214,10 @@ async function fetchFlowMeterData() {
         // Store total volume from ESP32
         if (typeof data.totalVolume === 'number') {
             state.totalVolume = data.totalVolume;
+            // Update Total Volume UI directly here as it's not part of the flow update loop
+            if (elements.totalVolume) {
+                elements.totalVolume.textContent = `${state.totalVolume.toFixed(3)} L`;
+            }
         }
 
         // Mark as using real data
@@ -329,9 +289,6 @@ function startMockDataGeneration() {
 // ==========================================
 
 function updateFlowData(flowRate) {
-    // Round to 1 decimal place
-    flowRate = Math.round(flowRate * 10) / 10;
-
     // Update state
     state.flowRate = flowRate;
     state.flowHistory.push(flowRate);
@@ -357,7 +314,7 @@ function updateFlowUI() {
     const flowRate = state.flowRate;
 
     // Update main display
-    elements.currentFlowRate.textContent = `${flowRate} L/min`;
+    elements.currentFlowRate.textContent = `${flowRate.toFixed(2)} L/min`;
     elements.gaugeValue.textContent = Math.round(flowRate);
 
     // Update gauge progress
@@ -367,10 +324,11 @@ function updateFlowUI() {
     const offset = circumference - (percentage / 100) * circumference;
     elements.gaugeProgress.style.strokeDashoffset = offset;
 
-    // Change gauge color based on threshold
-    if (flowRate > state.threshold) {
+    // Change gauge color based on threshold (Low flow = Bad)
+    if (flowRate < state.threshold) {
         elements.gaugeProgress.style.stroke = 'url(#dangerGradient)';
-    } else if (flowRate > state.threshold * 0.8) {
+    } else if (flowRate < state.threshold * 1.2) {
+        // Warning zone (close to threshold)
         elements.gaugeProgress.style.stroke = 'url(#warningGradient)';
     } else {
         elements.gaugeProgress.style.stroke = 'url(#gaugeGradient)';
@@ -383,10 +341,26 @@ function updateFlowUI() {
 }
 
 function checkThreshold() {
-    if (state.flowRate > state.threshold && !state.warningActive) {
-        triggerWarning();
-    } else if (state.flowRate <= state.threshold && state.warningActive) {
-        clearWarning();
+    // Alert if flow rate is BELOW threshold (clog detection)
+    if (state.flowRate < state.threshold) {
+        // If this is the start of the low flow condition, record the time
+        if (state.lowFlowStartTime === null) {
+            state.lowFlowStartTime = Date.now();
+            console.log('⏱️ Low flow detected. Starting 5s timer...');
+        }
+
+        // Check if 5 seconds have passed
+        const duration = Date.now() - state.lowFlowStartTime;
+        if (duration >= 5000 && !state.warningActive) {
+            triggerWarning();
+        }
+    } else {
+        // Flow is normal, reset timer and clear warning
+        state.lowFlowStartTime = null;
+
+        if (state.warningActive) {
+            clearWarning();
+        }
     }
 }
 
@@ -408,7 +382,7 @@ function triggerWarning() {
     const statusDot = document.querySelector('#systemStatus .status-dot');
     statusDot.classList.add('danger');
 
-    console.log('⚠️ WARNING: Flow rate exceeded threshold!');
+    console.log('⚠️ WARNING: Flow rate below threshold (Clog Detected)!');
 }
 
 function clearWarning() {
@@ -513,8 +487,26 @@ function returnBot() {
 // ==========================================
 
 function setupEventListeners() {
-    // No dynamic event listeners needed for threshold (now static)
-    // Threshold is set in CONFIG and displayed as read-only
+    // Threshold input listener
+    if (elements.thresholdInput) {
+        elements.thresholdInput.addEventListener('change', (e) => {
+            const newThreshold = parseFloat(e.target.value);
+            if (!isNaN(newThreshold) && newThreshold >= 0) {
+                state.threshold = newThreshold;
+                console.log(`⚙️ Threshold updated to: ${state.threshold} L/min`);
+
+                // Update static display if it exists
+                if (elements.thresholdValue) {
+                    elements.thresholdValue.textContent = `${state.threshold} L/min`;
+                }
+
+                // Re-check threshold immediately
+                checkThreshold();
+                // Update gauge colors
+                updateFlowUI();
+            }
+        });
+    }
 }
 
 // ==========================================
@@ -590,20 +582,16 @@ function toggleConfigSection() {
 
 function applyConfiguration() {
     const flowMeterUrl = document.getElementById('flowMeterUrlInput').value.trim();
-    const esp32CameraUrl = document.getElementById('esp32CameraUrlInput').value.trim();
     const botCameraUrl = document.getElementById('botCameraUrlInput').value.trim();
     const configStatus = document.getElementById('configStatus');
 
     // Update configuration (empty URLs are allowed - will use mock data)
     CONFIG.flowMeterUrl = flowMeterUrl;
-    CONFIG.esp32CameraUrl = esp32CameraUrl;
     CONFIG.botCameraUrl = botCameraUrl;
 
     // Reset device states
     state.devices.flowMeter.usingRealData = false;
     state.devices.flowMeter.connected = false;
-    state.devices.drainCamera.usingRealData = false;
-    state.devices.drainCamera.connected = false;
     state.devices.botCamera.usingRealData = false;
     state.devices.botCamera.connected = false;
 
@@ -613,7 +601,6 @@ function applyConfiguration() {
     // Show success message
     let message = '✓ Configuration applied!';
     if (!flowMeterUrl) message += ' (Flow meter: mock)';
-    if (!esp32CameraUrl) message += ' (Drain cam: mock)';
     if (!botCameraUrl) message += ' (Bot cam: mock)';
 
     configStatus.textContent = message;
@@ -630,7 +617,6 @@ function applyConfiguration() {
 
 function resetConfiguration() {
     document.getElementById('flowMeterUrlInput').value = DEFAULT_CONFIG.flowMeterUrl;
-    document.getElementById('esp32CameraUrlInput').value = DEFAULT_CONFIG.esp32CameraUrl;
     document.getElementById('botCameraUrlInput').value = DEFAULT_CONFIG.botCameraUrl;
 
     const configStatus = document.getElementById('configStatus');
@@ -644,7 +630,7 @@ function resetConfiguration() {
 
 // Placeholder functions for footer links
 function showInfo() {
-    alert('Project Aqua v1.0\n\nIntelligent Drain Monitoring & Cleaning System\n\nDeveloped for automated drainage maintenance with real-time monitoring and autonomous robot deployment.');
+    alert('Project Porishkar v1.0\n\nIntelligent Drain Monitoring & Cleaning System\n\nDeveloped for automated drainage maintenance with real-time monitoring and autonomous robot deployment.');
 }
 
 function showSettings() {

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Aqua - Drain Monitoring System</title>
+    <title>Project Porishkar - Drain Monitoring System</title>
     <meta name="description" content="Real-time drain monitoring and cleaning bot control system">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -15,9 +15,9 @@
         <div class="container">
             <div class="header-content">
                 <div class="logo-section">
-                    <div class="logo-icon">🤖</div>
+                    <img src="logo.jpg" alt="Project Porishkar Logo" class="logo-image">
                     <div>
-                        <h1 class="logo-title">Project Aqua</h1>
+                        <h1 class="logo-title">Project Porishkar</h1>
                         <p class="logo-subtitle">Intelligent Drain Monitoring</p>
                     </div>
                 </div>
@@ -36,7 +36,7 @@
                 <div class="alert-icon">⚠️</div>
                 <div class="alert-text">
                     <strong>Clogging Detected!</strong>
-                    <span>Flow rate exceeded threshold - Location: Main Drainage Line Section B</span>
+                    <span>Flow rate below threshold - Location: Main Drainage Line Section B</span>
                 </div>
                 <button class="alert-close" onclick="dismissAlert()">✕</button>
             </div>
@@ -59,8 +59,18 @@
                 <div class="stat-card">
                     <div class="stat-icon">📊</div>
                     <div class="stat-info">
-                        <p class="stat-label">Threshold</p>
-                        <h3 class="stat-value" id="thresholdDisplay">150 L/min</h3>
+                        <p class="stat-label">Total Volume</p>
+                        <h3 class="stat-value" id="totalVolume">-- L</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚙️</div>
+                    <div class="stat-info">
+                        <p class="stat-label">Alert Threshold</p>
+                        <div class="threshold-input-container">
+                            <input type="number" id="thresholdInput" value="20" min="0" step="10" class="stat-input">
+                            <span class="unit">L/min</span>
+                        </div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -96,26 +106,18 @@
                                     <small>Endpoint for flow rate data (JSON)</small>
                                 </label>
                                 <input type="text" class="config-input" id="flowMeterUrlInput"
-                                    value="http://192.168.0.77/api/data" placeholder="http://192.168.0.77/api/data">
+                                    value="http://10.93.71.184/api/data" placeholder="http://10.93.71.184/api/data">
                             </div>
 
-                            <div class="config-item">
-                                <label class="config-label">
-                                    <span>Drainage Camera Address</span>
-                                    <small>ESP32 camera stream URL</small>
-                                </label>
-                                <input type="text" class="config-input" id="esp32CameraUrlInput"
-                                    value="http://192.168.0.110/stream" placeholder="http://192.168.0.110/stream">
-                            </div>
+
 
                             <div class="config-item">
                                 <label class="config-label">
                                     <span>Bot Camera Address</span>
                                     <small>Bot camera stream URL</small>
                                 </label>
-                                <input type="text" class="config-input" id="botCameraUrlInput"
-                                    value="http://192.168.0.110/bot/stream"
-                                    placeholder="http://192.168.0.110/bot/stream">
+                                <input type="text" class="config-input" id="botCameraUrlInput" value="http://10.93.71.1"
+                                    placeholder="http://10.93.71.1">
                             </div>
                         </div>
 
@@ -187,33 +189,7 @@
                     </div>
                 </div>
 
-                <!-- ESP32 Camera Feed -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">Drainage Camera</h2>
-                        <div class="connection-status" id="cameraStatus">
-                            <span class="status-dot"></span>
-                            <span>Connected</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="camera-feed">
-                            <img id="drainCamera" src="" alt="Drainage Camera Feed" class="camera-image">
-                            <div class="camera-overlay" id="cameraOverlay">
-                                <div class="camera-placeholder">
-                                    <div class="camera-icon">📹</div>
-                                    <p id="drainCameraMessage">Connecting to camera...</p>
-                                    <small id="drainCameraAddress">--</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="camera-info">
-                            <span id="drainCameraLabel">ESP32-CAM Module</span>
-                            <button class="btn-icon" onclick="toggleFullscreen('drainCamera')"
-                                title="Fullscreen">⛶</button>
-                        </div>
-                    </div>
-                </div>
+
 
             </section>
 
@@ -327,7 +303,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 Project Aqua - Intelligent Drainage Management System</p>
+            <p>&copy; 2024 Project Porishkar - Intelligent Drainage Management System</p>
             <p class="footer-links">
                 <a href="#" onclick="showInfo()">About</a> ·
                 <a href="#" onclick="showSettings()">Settings</a> ·

@@ -130,6 +130,13 @@ body::before {
     gap: var(--space-md);
 }
 
+.logo-image {
+    height: 50px;
+    width: auto;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
 .logo-icon {
     font-size: 2.5rem;
     animation: float 3s ease-in-out infinite;
@@ -325,9 +332,39 @@ body::before {
 }
 
 .stat-value {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.threshold-input-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-input {
+    width: 80px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+
+.stat-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.unit {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
 }
 
 /* === Card Styles === */
