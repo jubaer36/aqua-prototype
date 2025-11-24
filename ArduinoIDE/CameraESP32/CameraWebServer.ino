@@ -9,14 +9,14 @@
 // ===========================
 // Enter your WiFi credentials
 // ===========================
-const char* ssid = "HelloWorld";
-const char *password = "ClassWiz_991EX";
+const char* ssid = "internet";
+const char *password = "internet123";
 
 void startCameraServer();
 void setupLedFlash();
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
 
@@ -40,7 +40,7 @@ void setup() {
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_UXGA;
+  config.frame_size = FRAMESIZE_QVGA;  // instead of UXGA
   config.pixel_format = PIXFORMAT_JPEG;  // for streaming
   //config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
   config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
@@ -128,3 +128,4 @@ void loop() {
   // Do nothing. Everything is done in another task by the web server
   delay(10000);
 }
+
