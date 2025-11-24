@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Aqua - Drain Monitoring System</title>
+    <meta name="description" content="Real-time drain monitoring and cleaning bot control system">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-icon">🤖</div>
+                    <div>
+                        <h1 class="logo-title">Project Aqua</h1>
+                        <p class="logo-subtitle">Intelligent Drain Monitoring</p>
+                    </div>
+                </div>
+                <div class="status-badge" id="systemStatus">
+                    <span class="status-dot"></span>
+                    <span>System Active</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Alert Banner -->
+    <div class="alert-banner hidden" id="alertBanner">
+        <div class="container">
+            <div class="alert-content">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-text">
+                    <strong>Clogging Detected!</strong>
+                    <span>Flow rate exceeded threshold - Location: Main Drainage Line Section B</span>
+                </div>
+                <button class="alert-close" onclick="dismissAlert()">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+
+            <!-- Dashboard Stats -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">💧</div>
+                    <div class="stat-info">
+                        <p class="stat-label">Current Flow Rate</p>
+                        <h3 class="stat-value" id="currentFlowRate">-- L/min</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <p class="stat-label">Threshold</p>
+                        <h3 class="stat-value" id="thresholdDisplay">150 L/min</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-info">
+                        <p class="stat-label">System Status</p>
+                        <h3 class="stat-value" id="systemStatusText">Normal</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🤖</div>
+                    <div class="stat-info">
+                        <p class="stat-label">Bot Status</p>
+                        <h3 class="stat-value" id="botStatusText">Standby</h3>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Configuration Section -->
+            <section class="config-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">⚙️ Device Configuration</h2>
+                        <button class="btn-config-toggle" onclick="toggleConfigSection()">
+                            <span id="configToggleIcon">▼</span>
+                        </button>
+                    </div>
+                    <div class="card-body config-body" id="configBody">
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label class="config-label">
+                                    <span>Flow Meter Address</span>
+                                    <small>Endpoint for flow rate data (JSON)</small>
+                                </label>
+                                <input type="text" class="config-input" id="flowMeterUrlInput"
+                                    value="http://192.168.0.77/api/data" placeholder="http://192.168.0.77/api/data">
+                            </div>
+
+                            <div class="config-item">
+                                <label class="config-label">
+                                    <span>Drainage Camera Address</span>
+                                    <small>ESP32 camera stream URL</small>
+                                </label>
+                                <input type="text" class="config-input" id="esp32CameraUrlInput"
+                                    value="http://192.168.0.110/stream" placeholder="http://192.168.0.110/stream">
+                            </div>
+
+                            <div class="config-item">
+                                <label class="config-label">
+                                    <span>Bot Camera Address</span>
+                                    <small>Bot camera stream URL</small>
+                                </label>
+                                <input type="text" class="config-input" id="botCameraUrlInput"
+                                    value="http://192.168.0.110/bot/stream"
+                                    placeholder="http://192.168.0.110/bot/stream">
+                            </div>
+                        </div>
+
+                        <div class="config-actions">
+                            <button class="btn-apply-config" onclick="applyConfiguration()">
+                                <span>✓</span>
+                                <span>Apply Configuration</span>
+                            </button>
+                            <button class="btn-secondary" onclick="resetConfiguration()">
+                                <span>Reset to Defaults</span>
+                            </button>
+                            <div class="config-status" id="configStatus"></div>
+                        </div>
+
+                        <div class="config-info">
+                            <p><strong>Note:</strong> Leave an address empty to use mock data for that device. If an
+                                address is provided, the system will only use real data from that address.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Monitoring Section -->
+            <section class="monitoring-grid">
+
+                <!-- Flow Meter Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Flow Meter Monitor</h2>
+                        <div class="connection-status" id="flowMeterStatus">
+                            <span class="status-dot"></span>
+                            <span>Connected</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Circular Gauge -->
+                        <div class="gauge-container">
+                            <svg class="gauge" viewBox="0 0 200 200">
+                                <circle class="gauge-bg" cx="100" cy="100" r="85" />
+                                <circle class="gauge-progress" id="gaugeProgress" cx="100" cy="100" r="85" />
+                                <text class="gauge-text" x="100" y="95" id="gaugeValue">--</text>
+                                <text class="gauge-unit" x="100" y="115">L/min</text>
+                            </svg>
+                        </div>
+
+                        <!-- Threshold Display (Static) -->
+                        <div class="threshold-display">
+                            <label class="control-label">
+                                <span>Alert Threshold</span>
+                                <span class="threshold-value" id="thresholdValue">150 L/min</span>
+                            </label>
+                        </div>
+
+                        <!-- Flow Stats -->
+                        <div class="flow-stats">
+                            <div class="flow-stat-item">
+                                <span class="flow-stat-label">Min</span>
+                                <span class="flow-stat-value" id="minFlow">--</span>
+                            </div>
+                            <div class="flow-stat-item">
+                                <span class="flow-stat-label">Avg</span>
+                                <span class="flow-stat-value" id="avgFlow">--</span>
+                            </div>
+                            <div class="flow-stat-item">
+                                <span class="flow-stat-label">Max</span>
+                                <span class="flow-stat-value" id="maxFlow">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ESP32 Camera Feed -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Drainage Camera</h2>
+                        <div class="connection-status" id="cameraStatus">
+                            <span class="status-dot"></span>
+                            <span>Connected</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="camera-feed">
+                            <img id="drainCamera" src="" alt="Drainage Camera Feed" class="camera-image">
+                            <div class="camera-overlay" id="cameraOverlay">
+                                <div class="camera-placeholder">
+                                    <div class="camera-icon">📹</div>
+                                    <p id="drainCameraMessage">Connecting to camera...</p>
+                                    <small id="drainCameraAddress">--</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="camera-info">
+                            <span id="drainCameraLabel">ESP32-CAM Module</span>
+                            <button class="btn-icon" onclick="toggleFullscreen('drainCamera')"
+                                title="Fullscreen">⛶</button>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Location Map Section -->
+            <section class="location-section" id="locationSection">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Drainage System Map</h2>
+                        <span class="clog-indicator hidden" id="clogIndicator">🔴 Clog Detected</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="drainage-map">
+                            <svg viewBox="0 0 800 300" class="map-svg">
+                                <!-- Main Drain Line -->
+                                <line x1="50" y1="150" x2="750" y2="150" class="drain-pipe" />
+
+                                <!-- Section A -->
+                                <circle cx="200" cy="150" r="15" class="drain-point" id="sectionA" />
+                                <text x="200" y="190" class="section-label">Section A</text>
+
+                                <!-- Section B (Potential Clog Point) -->
+                                <circle cx="400" cy="150" r="15" class="drain-point danger" id="sectionB" />
+                                <text x="400" y="190" class="section-label">Section B</text>
+
+                                <!-- Section C -->
+                                <circle cx="600" cy="150" r="15" class="drain-point" id="sectionC" />
+                                <text x="600" y="190" class="section-label">Section C</text>
+
+                                <!-- Flow Direction Arrows -->
+                                <polygon points="180,145 180,155 165,150" class="flow-arrow" />
+                                <polygon points="380,145 380,155 365,150" class="flow-arrow" />
+                                <polygon points="580,145 580,155 565,150" class="flow-arrow" />
+                                <polygon points="730,145 730,155 715,150" class="flow-arrow" />
+                            </svg>
+                        </div>
+                        <p class="map-description">
+                            Real-time drainage system overview. Highlighted sections indicate potential clogging areas.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bot Control Section -->
+            <section class="bot-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Bot Control Center</h2>
+                        <div class="bot-status-badge" id="botBadge">
+                            <span class="status-dot standby"></span>
+                            <span>Standby Mode</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="bot-controls">
+                            <div class="bot-info">
+                                <h3>Aqua Cleaning Bot</h3>
+                                <p>Deploy the autonomous cleaning bot to clear detected clogs in the drainage system.
+                                </p>
+                                <div class="bot-stats">
+                                    <div class="bot-stat">
+                                        <span class="bot-stat-label">Battery</span>
+                                        <div class="battery-indicator">
+                                            <div class="battery-level" style="width: 85%"></div>
+                                        </div>
+                                        <span class="bot-stat-value">85%</span>
+                                    </div>
+                                    <div class="bot-stat">
+                                        <span class="bot-stat-label">Last Deployment</span>
+                                        <span class="bot-stat-value">2 hours ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bot-actions">
+                                <button class="btn-deploy" id="deployBtn" onclick="toggleBotDeployment()">
+                                    <span class="btn-icon">🚀</span>
+                                    <span class="btn-text">Deploy Bot</span>
+                                </button>
+                                <button class="btn-secondary" onclick="returnBot()" id="returnBtn" disabled>
+                                    <span>Return to Dock</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Bot Interface (Hidden by default) -->
+                        <div class="bot-camera-section hidden" id="botCameraSection">
+                            <h3 class="section-subtitle">Bot Interface</h3>
+                            <div class="camera-feed bot-iframe-container" onclick="openBotInterface()">
+                                <iframe id="botCamera" src="" class="bot-iframe" frameborder="0"
+                                    allowfullscreen></iframe>
+                                <div class="camera-overlay" id="botCameraOverlay">
+                                    <div class="camera-placeholder">
+                                        <div class="camera-icon">🤖</div>
+                                        <p>Bot interface loading...</p>
+                                    </div>
+                                </div>
+                                <div class="iframe-click-hint">Click to open in new window</div>
+                            </div>
+                            <div class="camera-info">
+                                <span id="botInterfaceLabel">Bot Interface</span>
+                                <button class="btn-icon" onclick="openBotInterface(); event.stopPropagation();"
+                                    title="Open in new window">🔗</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Project Aqua - Intelligent Drainage Management System</p>
+            <p class="footer-links">
+                <a href="#" onclick="showInfo()">About</a> ·
+                <a href="#" onclick="showSettings()">Settings</a> ·
+                <a href="#" onclick="showLogs()">System Logs</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
