@@ -4,8 +4,8 @@
 
 // Configuration
 const CONFIG = {
-    flowMeterUrl: 'http://10.93.71.184/api/data',  // Actual ESP32 flow meter endpoint
-    botCameraUrl: 'http://10.93.71.1',
+    flowMeterUrl: 'http://192.168.80.184/api/data',  // Actual ESP32 flow meter endpoint
+    botCameraUrl: 'http://192.168.80.1',
     updateInterval: 2000, // 2 seconds
     defaultThreshold: 20, // L/min
     mockMode: false // Set to false when connected to actual hardware
@@ -13,8 +13,8 @@ const CONFIG = {
 
 // Default configuration for reset
 const DEFAULT_CONFIG = {
-    flowMeterUrl: 'http://10.93.71.184/api/data',
-    botCameraUrl: 'http://10.93.71.1'
+    flowMeterUrl: 'http://192.168.80.184/api/data',
+    botCameraUrl: 'http://192.168.80.1'
 };
 
 // Application State
