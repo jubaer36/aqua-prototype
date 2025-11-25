@@ -16,7 +16,7 @@ void startCameraServer();
 void setupLedFlash();
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.setDebugOutput(true);
   Serial.println();
 
@@ -116,12 +116,17 @@ void setup() {
   }
   Serial.println("");
   Serial.println("WiFi connected");
+  Serial.println(WiFi.RSSI());
+
 
   startCameraServer();
 
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
   Serial.println("' to connect");
+  Serial.printf("PSRAM total: %d bytes\n", ESP.getPsramSize());
+  Serial.printf("PSRAM free : %d bytes\n", ESP.getFreePsram());
+
 }
 
 void loop() {
