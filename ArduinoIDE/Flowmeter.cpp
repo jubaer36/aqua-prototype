@@ -7,7 +7,7 @@
 #include <LittleFS.h>
 
 // WiFi credentials
-const char* ssid = "Skiddle";
+const char* ssid = "internet";
 const char* password = "internet123";
 
 // Web server on port 80
